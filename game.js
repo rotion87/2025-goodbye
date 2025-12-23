@@ -1,4 +1,4 @@
-/* 2025 Recap Side-Scroller
+/* 2025 Recap Side-Scroller (Stable Background Parallax)
  * ← → 移動
  * ↑ 跳躍
  * Enter / Space：開始、關閉事件
@@ -24,13 +24,13 @@
 
   /* ================= 背景參數 ================= */
   const BG_SPEED = {
-    sky: 0.1,
-    far: 0.3,
-    near: 0.6,
-    ground: 1.0,
+    sky: 0.10,
+    far: 0.30,
+    near: 0.60,
+    ground: 1.00,
   };
 
-  /* ================= 漂浮參數 ================= */
+  /* ================= 道具漂浮參數 ================= */
   const FLOAT_AMPLITUDE = 4;
   const FLOAT_SPEED = 1.6;
   const FLOAT_PHASE_STEP = 0.9;
@@ -66,25 +66,38 @@
     if (audio.muted) return;
     try {
       a.currentTime = 0;
-      a.play();
+      a.play().catch(() => {});
     } catch {}
+  }
+
+  function startBGM() {
+    if (audio.muted) return;
+    audio.bgm.play().catch(() => {});
   }
 
   function toggleMute() {
     audio.muted = !audio.muted;
-    Object.values(audio).forEach(a => a.muted = audio.muted);
-    if (!audio.muted) audio.bgm.play().catch(()=>{});
+    Object.values(audio).forEach(v => {
+      if (v instanceof Audio) v.muted = audio.muted;
+    });
+    if (!audio.muted) startBGM();
     else audio.bgm.pause();
   }
 
   /* ================= IMAGES ================= */
   function loadImage(src) {
     const img = new Image();
+    img.loaded = false;
+    img.onload = () => { img.loaded = true; };
+    img.onerror = () => {
+      img.loaded = false;
+      console.warn("Image failed to load:", src);
+    };
     img.src = src;
     return img;
   }
 
-  // 背景
+  // 背景（你自己的照片）
   const bg = {
     sky: loadImage("media/backgrounds/bg_sky.png"),
     far: loadImage("media/backgrounds/bg_far.png"),
@@ -92,10 +105,10 @@
     ground: loadImage("media/backgrounds/bg_ground.png"),
   };
 
-  // 角色
+  // 角色（同一張）
   const playerImage = loadImage("media/player/player_main.png");
 
-  // 道具
+  // 道具（PNG）
   const spriteImages = {
     snake: loadImage("media/sprites/item_snake.png"),
     eyes: loadImage("media/sprites/item_eyes.png"),
@@ -114,6 +127,7 @@
   };
 
   /* ================= EVENTS ================= */
+  // K（爸爸）已移除
   const events = [
     { id:"A", name:"蛇年賀卡", sprite:"snake", x:1100, media:{type:"video",src:"media/A_snake.mp4"}, xp:15, coinCost:18000 },
     { id:"B", name:"你好礙眼", sprite:"eyes", x:2000, media:{type:"ig",img:"media/B_ig.jpg",url:"https://instagram.com"}, xp:15, coinCost:21000 },
@@ -130,14 +144,17 @@
     { id:"N", name:"燭籤", sprite:"candle", x:14500, media:{type:"gallery",srcs:["media/N_1.jpg"]}, xp:20, coinCost:40000 },
     { id:"O", name:"草率季", sprite:"rat", x:15400, media:{type:"gallery",srcs:["media/O_1.jpg","media/O_2.jpg"]}, xp:40, coinCost:97748 },
   ];
-  events.forEach((ev,i)=>ev.floatPhase=i*FLOAT_PHASE_STEP);
+  events.forEach((ev, i) => (ev.floatPhase = i * FLOAT_PHASE_STEP));
   const triggered = new Set();
 
   /* ================= PLAYER ================= */
   const player = {
-    x: 200, y: GROUND_Y - 48,
-    w: 32, h: 48,
-    vx: 0, vy: 0,
+    x: 200,
+    y: GROUND_Y - 48,
+    w: 32,
+    h: 48,
+    vx: 0,
+    vy: 0,
     speed: 3.2,
     jumpPower: 9.5,
     gravity: 0.5,
@@ -148,23 +165,34 @@
   let started = false;
   let paused = false;
   let finished = false;
+
   let coins = TOTAL_COINS;
   let finalZoneCoins = null;
 
   /* ================= INPUT ================= */
   const keys = new Set();
-  window.addEventListener("keydown", e => {
-    const k = e.key;
-    if (k.toLowerCase()==="m") toggleMute();
 
-    if ((k==="Enter"||k===" ") && !started) {
-      started = true;
-      titleScreen.classList.remove("show");
-      audio.bgm.play().catch(()=>{});
+  window.addEventListener("keydown", (e) => {
+    const k = e.key;
+
+    if (k.toLowerCase() === "m") {
+      toggleMute();
       return;
     }
 
-    if (k==="ArrowUp" && player.onGround && started && !paused) {
+    // prevent page scroll on arrows/space
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", " ", "Enter", "Escape"].includes(k)) {
+      e.preventDefault();
+    }
+
+    if ((k === "Enter" || k === " ") && !started) {
+      started = true;
+      titleScreen.classList.remove("show");
+      startBGM();
+      return;
+    }
+
+    if (k === "ArrowUp" && player.onGround && started && !paused && !finished) {
       player.vy = -player.jumpPower;
       player.onGround = false;
       playSFX(audio.pickup);
@@ -172,90 +200,115 @@
 
     keys.add(k);
 
-    if ((k==="Escape"||k==="Enter"||k===" ") && modal.classList.contains("show")) closeModal();
-  });
-  window.addEventListener("keyup", e=>keys.delete(e.key));
-  closeBtn.onclick = closeModal;
+    if ((k === "Escape" || k === "Enter" || k === " ") && modal.classList.contains("show")) {
+      closeModal();
+    }
+  }, { passive: false });
 
-  /* ================= DRAW ================= */
-  function drawLayer(img, speed, y=0) {
-    if (!img.complete) return;
-    const w = img.width;
-    const offset = -(cameraX * speed) % w;
-    for (let x = offset; x < W; x += w) {
-      ctx.drawImage(img, x, y);
+  window.addEventListener("keyup", (e) => keys.delete(e.key));
+  closeBtn.addEventListener("click", () => closeModal());
+
+  /* ================= BACKGROUND DRAW ================= */
+  function drawFallbackBackground() {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#0a0b10");
+    g.addColorStop(0.6, "#0d1020");
+    g.addColorStop(1, "#07080c");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawLayer(img, speed, y = 0, heightOverride = null) {
+    if (!img || !img.loaded || img.width <= 0) return;
+
+    const iw = img.width;
+    const ih = img.height;
+
+    // offset based on parallax speed
+    let offsetX = -((cameraX * speed) % iw);
+
+    // draw extra tiles to avoid edges
+    for (let x = offsetX - iw; x < W + iw; x += iw) {
+      if (heightOverride !== null) {
+        ctx.drawImage(img, x, y, iw, heightOverride);
+      } else {
+        ctx.drawImage(img, x, y, iw, ih);
+      }
     }
   }
 
   function drawBackground() {
+    // If no background loaded at all, still show something.
+    const anyLoaded = bg.sky.loaded || bg.far.loaded || bg.near.loaded;
+    if (!anyLoaded) {
+      drawFallbackBackground();
+      return;
+    }
+
+    // If some layers missing, still draw others
     drawLayer(bg.sky, BG_SPEED.sky, 0);
     drawLayer(bg.far, BG_SPEED.far, 0);
     drawLayer(bg.near, BG_SPEED.near, 0);
   }
 
   function drawGround() {
-    if (!bg.ground.complete) return;
-    const y = GROUND_Y;
-    drawLayer(bg.ground, BG_SPEED.ground, y);
-  }
-
-  function drawPlayer() {
-    const sx = Math.round(player.x - cameraX);
-    const sy = Math.round(player.y);
-    if (playerImage.complete) {
-      ctx.drawImage(playerImage, sx, sy, player.w, player.h);
+    // If ground missing, draw simple ground strip
+    if (!bg.ground.loaded) {
+      ctx.fillStyle = "#0f1a16";
+      ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+      ctx.fillStyle = "rgba(255,255,255,.10)";
+      ctx.fillRect(0, GROUND_Y, W, 2);
+      return;
     }
+
+    // Place ground at GROUND_Y; do NOT stretch unless you want to
+    drawLayer(bg.ground, BG_SPEED.ground, GROUND_Y);
   }
 
-  function drawItems() {
-    const t = (performance.now() - startTime) / 1000;
-    const baseY = GROUND_Y - 30;
-    events.forEach(ev=>{
-      if (triggered.has(ev.id)) return;
-      const sx = ev.x - cameraX;
-      if (sx < -80 || sx > W+80) return;
-      const fy = Math.sin(t*FLOAT_SPEED + ev.floatPhase)*FLOAT_AMPLITUDE;
-      const img = spriteImages[ev.sprite];
-      if (img.complete) {
-        ctx.drawImage(img, sx-ITEM_SIZE/2, baseY+fy-ITEM_SIZE/2, ITEM_SIZE, ITEM_SIZE);
-      }
-    });
-  }
-
-  /* ================= UPDATE ================= */
+  /* ================= GAME UPDATE ================= */
   function update() {
+    // horizontal
     player.vx = 0;
     if (keys.has("ArrowLeft")) player.vx = -player.speed;
     if (keys.has("ArrowRight")) player.vx = player.speed;
 
     player.x = clamp(player.x + player.vx, 0, END_X);
 
+    // vertical
     player.vy += player.gravity;
     player.y += player.vy;
+
     if (player.y >= GROUND_Y - player.h) {
       player.y = GROUND_Y - player.h;
       player.vy = 0;
       player.onGround = true;
     }
 
-    cameraX = clamp(player.x - W*0.35, 0, WORLD_LENGTH-W);
+    // camera follow
+    cameraX = clamp(player.x - W * 0.35, 0, WORLD_LENGTH - W);
 
-    events.forEach(ev=>{
-      if (triggered.has(ev.id)) return;
-      if (player.x > ev.x-20 && player.x < ev.x+20) {
+    // triggers
+    for (const ev of events) {
+      if (triggered.has(ev.id)) continue;
+      if (player.x > ev.x - 20 && player.x < ev.x + 20) {
         triggered.add(ev.id);
-        coins = Math.max(0, coins-ev.coinCost);
+        coins = Math.max(0, coins - (ev.coinCost || 0));
+        playSFX(audio.pickup);
         openModal(ev);
+        break;
       }
-    });
-
-    if (player.x > FINAL_ZONE_START) {
-      if (finalZoneCoins===null) finalZoneCoins = coins;
-      const p = (player.x-FINAL_ZONE_START)/(END_X-FINAL_ZONE_START);
-      coins = Math.round(finalZoneCoins*(1-Math.min(p,1)));
     }
 
-    if (player.x>=END_X && !finished) {
+    // final zone => coins -> 0
+    if (player.x > FINAL_ZONE_START) {
+      if (finalZoneCoins === null) finalZoneCoins = coins;
+      const denom = (END_X - FINAL_ZONE_START);
+      const p = denom > 0 ? clamp((player.x - FINAL_ZONE_START) / denom, 0, 1) : 1;
+      coins = Math.round(finalZoneCoins * (1 - p));
+    }
+
+    // end
+    if (player.x >= END_X - 1 && !finished) {
       finished = true;
       coins = 0;
       playSFX(audio.end);
@@ -263,25 +316,42 @@
     }
   }
 
+  /* ================= MODAL ================= */
   function openModal(ev) {
     paused = true;
     modal.classList.add("show");
     playSFX(audio.open);
+
     modalTitle.textContent = `${ev.id}｜${ev.name}`;
-    modalSubtitle.textContent = `Coins -${fmt(ev.coinCost)}`;
+    modalSubtitle.textContent = `Coins -${fmt(ev.coinCost || 0)}`;
+
     modalMedia.innerHTML = "";
-    if (ev.media.type==="video") {
-      const v=document.createElement("video");
-      v.src=ev.media.src; v.controls=true; v.autoplay=true;
+
+    const m = ev.media;
+    if (!m) return;
+
+    if (m.type === "video") {
+      const v = document.createElement("video");
+      v.src = m.src;
+      v.controls = true;
+      v.autoplay = true;
+      v.playsInline = true;
       modalMedia.appendChild(v);
-    } else if (ev.media.type==="gallery") {
-      const img=document.createElement("img");
-      img.src=ev.media.srcs[0];
+      return;
+    }
+
+    if (m.type === "gallery") {
+      const img = document.createElement("img");
+      img.src = m.srcs?.[0] || "";
       modalMedia.appendChild(img);
-    } else if (ev.media.type==="ig") {
-      const img=document.createElement("img");
-      img.src=ev.media.img;
+      return;
+    }
+
+    if (m.type === "ig") {
+      const img = document.createElement("img");
+      img.src = m.img || "";
       modalMedia.appendChild(img);
+      return;
     }
   }
 
@@ -291,15 +361,76 @@
     playSFX(audio.close);
   }
 
+  /* ================= RENDER ================= */
+  function drawItems() {
+    const t = (performance.now() - startTime) / 1000;
+    const baseY = GROUND_Y - 30;
+
+    for (const ev of events) {
+      if (triggered.has(ev.id)) continue;
+
+      const sx = ev.x - cameraX;
+      if (sx < -120 || sx > W + 120) continue;
+
+      const fy = Math.sin(t * FLOAT_SPEED + ev.floatPhase) * FLOAT_AMPLITUDE;
+      const img = spriteImages[ev.sprite];
+
+      // shadow
+      ctx.fillStyle = "rgba(0,0,0,.25)";
+      ctx.fillRect(Math.round(sx - ITEM_SIZE * 0.30), Math.round(baseY + ITEM_SIZE * 0.60), Math.round(ITEM_SIZE * 0.60), 3);
+
+      if (img && img.loaded) {
+        ctx.drawImage(img, Math.round(sx - ITEM_SIZE / 2), Math.round(baseY + fy - ITEM_SIZE / 2), ITEM_SIZE, ITEM_SIZE);
+      } else {
+        // fallback
+        ctx.fillStyle = "rgba(142,240,201,.85)";
+        ctx.fillRect(Math.round(sx - 10), Math.round(baseY + fy - 10), 20, 20);
+      }
+    }
+  }
+
+  function drawPlayer() {
+    const sx = Math.round(player.x - cameraX);
+    const sy = Math.round(player.y);
+
+    if (playerImage.loaded) {
+      ctx.drawImage(playerImage, sx, sy, player.w, player.h);
+    } else {
+      ctx.fillStyle = "rgba(142,240,201,.85)";
+      ctx.fillRect(sx, sy, player.w, player.h);
+    }
+  }
+
+  function drawHUD() {
+    if (!started) return;
+
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+
+    ctx.fillStyle = "rgba(0,0,0,.30)";
+    ctx.fillRect(14, 14, 360, 44);
+
+    ctx.fillStyle = "rgba(233,236,241,.92)";
+    ctx.font = "600 14px ui-sans-serif, system-ui";
+    ctx.fillText(`Coins: ${fmt(coins)}`, 24, 42);
+
+    ctx.restore();
+  }
+
   /* ================= LOOP ================= */
   function loop() {
     if (started && !paused && !finished) update();
-    ctx.clearRect(0,0,W,H);
+
+    ctx.clearRect(0, 0, W, H);
+
     drawBackground();
     drawGround();
     drawItems();
     drawPlayer();
+    drawHUD();
+
     requestAnimationFrame(loop);
   }
+
   loop();
 })();
