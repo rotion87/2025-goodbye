@@ -79,35 +79,10 @@ canvas{
   display:grid;
   gap:10px;
 }
-
 .modalMedia img, .modalMedia video{
   width:100%;
   border-radius:10px;
   border:1px solid rgba(255,255,255,.10);
-}
-
-.modalMedia .linkRow{
-  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-}
-
-.modalMedia a{
-  color: var(--accent);
-  text-decoration:none;
-  border:1px solid rgba(142,240,201,.35);
-  padding:8px 10px;
-  border-radius:10px;
-}
-.modalMedia a:hover{ border-color: rgba(142,240,201,.7); }
-
-.modalCaption{
-  margin:12px 0 0;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.08);
-  background: rgba(255,255,255,.03);
-  white-space:pre-wrap;
-  line-height:1.55;
-  color: var(--text);
 }
 
 .modalFooter{
