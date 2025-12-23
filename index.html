@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2025 回顧｜橫向卷軸冒險</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game" width="960" height="540" aria-label="game canvas"></canvas>
+
+    <!-- Title Screen -->
+    <div id="titleScreen" class="overlay show" role="dialog" aria-modal="true">
+      <div class="panel">
+        <div class="logo">PRESS START</div>
+        <div class="sub">2025 年度回顧・橫向卷軸冒險</div>
+        <div class="hint">Press <b>Enter</b> / <b>Space</b> to Start</div>
+        <div class="tiny">← → 移動　Enter / Space 確認　ESC 關閉視窗</div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="overlay" role="dialog" aria-modal="true">
+      <div class="panel modal">
+        <div class="modalHeader">
+          <div>
+            <div id="modalTitle" class="modalTitle">事件</div>
+            <div id="modalSubtitle" class="modalSubtitle">—</div>
+          </div>
+          <button id="closeBtn" class="closeBtn" aria-label="close">ESC</button>
+        </div>
+
+        <div id="modalMedia" class="modalMedia"></div>
+        <pre id="modalCaption" class="modalCaption"></pre>
+
+        <div class="modalFooter">
+          <span>Enter / ESC 關閉</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ending -->
+    <div id="ending" class="overlay" role="dialog" aria-modal="true">
+      <div class="panel">
+        <div class="endText">
+所有夢想都有終點
+
+但不是結束
+
+是我終於知道
+自己走到哪裡了
+        </div>
+        <div class="hint">（按 F5 重新開始）</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
