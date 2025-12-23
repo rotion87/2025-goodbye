@@ -9,8 +9,11 @@
 }
 
 *{ box-sizing:border-box; }
-html,body{ margin:0; height:100%; background:var(--bg); color:var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+html,body{
+  margin:0; height:100%;
+  background:var(--bg); color:var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+}
 
 #wrap{ height:100%; display:grid; place-items:center; padding:16px; }
 
@@ -106,7 +109,6 @@ canvas{
   line-height:1.55;
   color: var(--text);
 }
-.modalCaption.hidden{ display:none; }
 
 .modalFooter{
   margin-top:10px;
