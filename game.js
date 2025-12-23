@@ -1,8 +1,3 @@
-/* 2025 Recap Side-Scroller
- * Single Background Version
- * ← → 移動｜↑ 跳躍｜Enter/Space 開始/關閉｜ESC 關閉｜M 靜音
- */
-
 (() => {
   "use strict";
 
@@ -11,15 +6,14 @@
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
 
-  const W = canvas.width;
-  const H = canvas.height;
+  const W = canvas.width;   // 1920
+  const H = canvas.height;  // 540
 
   const GROUND_Y = Math.floor(H * 0.78);
   const WORLD_LENGTH = 16000;
   const END_X = WORLD_LENGTH - 300;
   const FINAL_ZONE_START = Math.floor(WORLD_LENGTH * 0.9);
 
-  /* ================= 工具 ================= */
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const fmt = (n) => n.toLocaleString("en-US");
   const startTime = performance.now();
@@ -29,33 +23,59 @@
   const modal = document.getElementById("modal");
   const ending = document.getElementById("ending");
   const closeBtn = document.getElementById("closeBtn");
-
   const modalTitle = document.getElementById("modalTitle");
   const modalSubtitle = document.getElementById("modalSubtitle");
   const modalMedia = document.getElementById("modalMedia");
 
   /* ================= AUDIO ================= */
-  const audio = {
-    muted: false,
-    bgm: new Audio("media/audio/bgm.mp3"),
-    pickup: new Audio("media/audio/sfx_pickup.wav"),
-    open: new Audio("media/audio/sfx_open.wav"),
-    close: new Audio("media/audio/sfx_close.wav"),
-    end: new Audio("media/audio/sfx_end.wav"),
-  };
-  audio.bgm.loop = true;
-  audio.bgm.volume = 0.55;
+  const bgm = new Audio("media/audio/bgm.mp3");
+  bgm.loop = true;
+  bgm.volume = 0.55;
+  bgm.preload = "auto";
+
+  const sfx_pickup = new Audio("media/audio/sfx_pickup.wav");
+  const sfx_open = new Audio("media/audio/sfx_open.wav");
+  const sfx_close = new Audio("media/audio/sfx_close.wav");
+  const sfx_end = new Audio("media/audio/sfx_end.wav");
+
+  let muted = false;
+
+  function hookAudioDebug(a, name) {
+    a.addEventListener("error", () => {
+      console.warn(`[AUDIO ERROR] ${name} failed to load. Check path/format:`, a.src);
+    });
+  }
+  hookAudioDebug(bgm, "bgm.mp3");
+  hookAudioDebug(sfx_pickup, "sfx_pickup.wav");
+  hookAudioDebug(sfx_open, "sfx_open.wav");
+  hookAudioDebug(sfx_close, "sfx_close.wav");
+  hookAudioDebug(sfx_end, "sfx_end.wav");
 
   function playSFX(a) {
-    if (audio.muted) return;
-    try { a.currentTime = 0; a.play(); } catch {}
+    if (muted) return;
+    try {
+      a.currentTime = 0;
+      a.play().catch(()=>{});
+    } catch {}
+  }
+
+  async function startBGM() {
+    if (muted) return;
+    try {
+      // 確保從頭載入一次（避免某些瀏覽器沒抓到）
+      bgm.load();
+      await bgm.play();
+      // console.log("BGM playing");
+    } catch (err) {
+      console.warn("[BGM BLOCKED] Browser blocked autoplay or file missing:", err);
+    }
   }
 
   function toggleMute() {
-    audio.muted = !audio.muted;
-    Object.values(audio).forEach(a => a.muted = audio.muted);
-    if (!audio.muted) audio.bgm.play().catch(()=>{});
-    else audio.bgm.pause();
+    muted = !muted;
+    [bgm, sfx_pickup, sfx_open, sfx_close, sfx_end].forEach(a => a.muted = muted);
+    if (!muted) startBGM();
+    else bgm.pause();
   }
 
   /* ================= IMAGES ================= */
@@ -63,21 +83,13 @@
     const img = new Image();
     img.loaded = false;
     img.onload = () => img.loaded = true;
-    img.onerror = () => console.warn("Image failed:", src);
+    img.onerror = () => console.warn("[IMG ERROR] failed:", src);
     img.src = src;
     return img;
   }
 
-  // ✅ 單一背景
-  const bgMain = loadImage("media/backgrounds/bg_main.png");
-
-  // 角色
+  const bgMain = loadImage("media/backgrounds/bg_main.png"); // 1920x540
   const playerImage = loadImage("media/player/player_main.png");
-
-  // 道具
-  const ITEM_SIZE = 48;
-  const FLOAT_AMPLITUDE = 4;
-  const FLOAT_SPEED = 1.6;
 
   const spriteImages = {
     snake: loadImage("media/sprites/item_snake.png"),
@@ -114,164 +126,207 @@
     { id:"O", name:"草率季", sprite:"rat", x:15400, media:{type:"gallery",srcs:["media/O_1.jpg","media/O_2.jpg"]}, coinCost:97748 },
   ];
 
-  events.forEach((ev,i)=>ev.phase=i*0.9);
+  const FLOAT_AMPLITUDE = 4;
+  const FLOAT_SPEED = 1.6;
+  const FLOAT_PHASE_STEP = 0.9;
+  const ITEM_SIZE = 48;
+
+  events.forEach((ev,i)=>ev.phase=i*FLOAT_PHASE_STEP);
   const triggered = new Set();
 
   /* ================= PLAYER ================= */
   const player = {
     x:200, y:GROUND_Y-48, w:32, h:48,
-    vx:0, vy:0, speed:3.2, jump:9.5, gravity:0.5, onGround:true
+    vx:0, vy:0,
+    speed:3.2, jumpPower:9.5, gravity:0.5,
+    onGround:true
   };
 
   let cameraX = 0;
-  let started=false, paused=false, finished=false;
-  let coins = TOTAL_COINS, finalZoneCoins=null;
+  let started = false;
+  let paused = false;
+  let finished = false;
+
+  let coins = TOTAL_COINS;
+  let finalZoneEnterCoins = null;
 
   /* ================= INPUT ================= */
   const keys = new Set();
-  window.addEventListener("keydown", e=>{
-    const k=e.key;
-    if(k.toLowerCase()==="m") toggleMute();
-    if(["ArrowLeft","ArrowRight","ArrowUp"," ","Enter","Escape"].includes(k)) e.preventDefault();
+  window.addEventListener("keydown", (e) => {
+    const k = e.key;
 
-    if((k==="Enter"||k===" ")&&!started){
-      started=true;
+    if (k.toLowerCase()==="m") { toggleMute(); return; }
+
+    if (["ArrowLeft","ArrowRight","ArrowUp"," ","Enter","Escape"].includes(k)) e.preventDefault();
+
+    if ((k==="Enter"||k===" ") && !started) {
+      started = true;
       titleScreen.classList.remove("show");
-      audio.bgm.play().catch(()=>{});
+      startBGM();                 // ✅ 使用者手勢後開始播放
       return;
     }
 
-    if(k==="ArrowUp"&&player.onGround&&started&&!paused){
-      player.vy=-player.jump;
-      player.onGround=false;
-      playSFX(audio.pickup);
+    if (k==="ArrowUp" && player.onGround && started && !paused && !finished) {
+      player.vy = -player.jumpPower;
+      player.onGround = false;
+      playSFX(sfx_pickup);
     }
 
     keys.add(k);
-    if((k==="Escape"||k==="Enter"||k===" ")&&modal.classList.contains("show")) closeModal();
-  },{passive:false});
-  window.addEventListener("keyup",e=>keys.delete(e.key));
-  closeBtn.onclick=closeModal;
+
+    if ((k==="Escape"||k==="Enter"||k===" ") && modal.classList.contains("show")) closeModal();
+  }, {passive:false});
+  window.addEventListener("keyup", (e)=>keys.delete(e.key));
+  closeBtn.addEventListener("click", ()=>closeModal());
+
+  /* ================= DRAW ================= */
+  function drawBackground() {
+    ctx.imageSmoothingEnabled = false;
+
+    // ✅ 因為 canvas 也是 1920x540，直接貼就不會變形
+    if (bgMain.loaded) {
+      ctx.drawImage(bgMain, 0, 0, W, H);
+    } else {
+      ctx.fillStyle = "#ccecf5";
+      ctx.fillRect(0,0,W,H);
+      ctx.fillStyle = "rgba(0,0,0,.6)";
+      ctx.font = "16px system-ui";
+      ctx.fillText("背景載入中…（若一直不出現，請檢查 bg_main.png 路徑/檔名）", 24, 40);
+    }
+  }
+
+  function drawItems() {
+    const t = (performance.now()-startTime)/1000;
+    const baseY = GROUND_Y - 30;
+
+    for (const ev of events) {
+      if (triggered.has(ev.id)) continue;
+      const sx = ev.x - cameraX;
+      if (sx < -120 || sx > W+120) continue;
+
+      const fy = Math.sin(t*FLOAT_SPEED + ev.phase) * FLOAT_AMPLITUDE;
+
+      const img = spriteImages[ev.sprite];
+
+      // shadow
+      ctx.fillStyle = "rgba(0,0,0,.25)";
+      ctx.fillRect(Math.round(sx - ITEM_SIZE*0.30), Math.round(baseY + ITEM_SIZE*0.60), Math.round(ITEM_SIZE*0.60), 3);
+
+      if (img && img.loaded) {
+        ctx.drawImage(img, Math.round(sx-ITEM_SIZE/2), Math.round(baseY+fy-ITEM_SIZE/2), ITEM_SIZE, ITEM_SIZE);
+      }
+    }
+  }
+
+  function drawPlayer() {
+    const sx = Math.round(player.x - cameraX);
+    const sy = Math.round(player.y);
+
+    if (playerImage.loaded) {
+      ctx.drawImage(playerImage, sx, sy, player.w, player.h);
+    } else {
+      ctx.fillStyle = "rgba(142,240,201,.85)";
+      ctx.fillRect(sx, sy, player.w, player.h);
+    }
+  }
+
+  function drawHUD() {
+    if (!started) return;
+    ctx.fillStyle = "rgba(0,0,0,.30)";
+    ctx.fillRect(14, 14, 320, 42);
+    ctx.fillStyle = "rgba(233,236,241,.92)";
+    ctx.font = "600 16px system-ui";
+    ctx.fillText(`Coins: ${fmt(coins)}`, 24, 42);
+  }
+
+  /* ================= MODAL ================= */
+  function openModal(ev) {
+    paused = true;
+    modal.classList.add("show");
+    playSFX(sfx_open);
+
+    modalTitle.textContent = `${ev.id}｜${ev.name}`;
+    modalSubtitle.textContent = `Coins -${fmt(ev.coinCost||0)}`;
+
+    modalMedia.innerHTML = "";
+    const m = ev.media;
+    if (!m) return;
+
+    if (m.type==="video") {
+      const v = document.createElement("video");
+      v.src = m.src;
+      v.controls = true;
+      v.autoplay = true;
+      v.playsInline = true;
+      modalMedia.appendChild(v);
+    } else {
+      const img = document.createElement("img");
+      img.src = m.img || m.srcs?.[0] || "";
+      modalMedia.appendChild(img);
+    }
+  }
+
+  function closeModal() {
+    modal.classList.remove("show");
+    paused = false;
+    playSFX(sfx_close);
+  }
 
   /* ================= UPDATE ================= */
-  function update(){
-    player.vx=0;
-    if(keys.has("ArrowLeft")) player.vx=-player.speed;
-    if(keys.has("ArrowRight")) player.vx=player.speed;
-    player.x=clamp(player.x+player.vx,0,END_X);
+  function update() {
+    player.vx = 0;
+    if (keys.has("ArrowLeft")) player.vx = -player.speed;
+    if (keys.has("ArrowRight")) player.vx = player.speed;
 
-    player.vy+=player.gravity;
-    player.y+=player.vy;
-    if(player.y>=GROUND_Y-player.h){
-      player.y=GROUND_Y-player.h;
-      player.vy=0; player.onGround=true;
+    player.x = clamp(player.x + player.vx, 0, END_X);
+
+    player.vy += player.gravity;
+    player.y += player.vy;
+
+    if (player.y >= GROUND_Y - player.h) {
+      player.y = GROUND_Y - player.h;
+      player.vy = 0;
+      player.onGround = true;
     }
 
-    cameraX=clamp(player.x-W*0.35,0,WORLD_LENGTH-W);
+    cameraX = clamp(player.x - W*0.35, 0, WORLD_LENGTH - W);
 
-    for(const ev of events){
-      if(triggered.has(ev.id)) continue;
-      if(player.x>ev.x-20&&player.x<ev.x+20){
+    for (const ev of events) {
+      if (triggered.has(ev.id)) continue;
+      if (player.x > ev.x-20 && player.x < ev.x+20) {
         triggered.add(ev.id);
-        coins=Math.max(0,coins-ev.coinCost);
+        coins = Math.max(0, coins - (ev.coinCost||0));
+        playSFX(sfx_pickup);
         openModal(ev);
         break;
       }
     }
 
-    if(player.x>FINAL_ZONE_START){
-      if(finalZoneCoins===null) finalZoneCoins=coins;
-      const p=(player.x-FINAL_ZONE_START)/(END_X-FINAL_ZONE_START);
-      coins=Math.round(finalZoneCoins*(1-Math.min(p,1)));
+    if (player.x > FINAL_ZONE_START) {
+      if (finalZoneEnterCoins === null) finalZoneEnterCoins = coins;
+      const denom = (END_X - FINAL_ZONE_START);
+      const p = denom > 0 ? clamp((player.x - FINAL_ZONE_START)/denom, 0, 1) : 1;
+      coins = Math.round(finalZoneEnterCoins * (1 - p));
     }
 
-    if(player.x>=END_X&&!finished){
-      finished=true; coins=0;
-      playSFX(audio.end);
+    if (player.x >= END_X - 1 && !finished) {
+      finished = true;
+      coins = 0;
+      playSFX(sfx_end);
       ending.classList.add("show");
     }
   }
 
-  /* ================= DRAW ================= */
-  function drawBackground(){
-    if(bgMain.loaded){
-      ctx.drawImage(bgMain,0,0,W,H);
-    }else{
-      ctx.fillStyle="#0b0c10";
-      ctx.fillRect(0,0,W,H);
-    }
-  }
-
-  function drawGround(){
-    ctx.fillStyle="rgba(0,0,0,.25)";
-    ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
-  }
-
-  function drawItems(){
-    const t=(performance.now()-startTime)/1000;
-    const baseY=GROUND_Y-30;
-    for(const ev of events){
-      if(triggered.has(ev.id)) continue;
-      const sx=ev.x-cameraX;
-      if(sx<-80||sx>W+80) continue;
-      const fy=Math.sin(t*FLOAT_SPEED+ev.phase)*FLOAT_AMPLITUDE;
-      const img=spriteImages[ev.sprite];
-      if(img.loaded){
-        ctx.drawImage(img,sx-ITEM_SIZE/2,baseY+fy-ITEM_SIZE/2,ITEM_SIZE,ITEM_SIZE);
-      }
-    }
-  }
-
-  function drawPlayer(){
-    const sx=Math.round(player.x-cameraX);
-    const sy=Math.round(player.y);
-    if(playerImage.loaded){
-      ctx.drawImage(playerImage,sx,sy,player.w,player.h);
-    }
-  }
-
-  function drawHUD(){
-    ctx.fillStyle="rgba(0,0,0,.35)";
-    ctx.fillRect(14,14,260,36);
-    ctx.fillStyle="#fff";
-    ctx.font="14px system-ui";
-    ctx.fillText(`Coins: ${fmt(coins)}`,24,38);
-  }
-
-  /* ================= MODAL ================= */
-  function openModal(ev){
-    paused=true; modal.classList.add("show");
-    playSFX(audio.open);
-    modalTitle.textContent=`${ev.id}｜${ev.name}`;
-    modalSubtitle.textContent=`Coins -${fmt(ev.coinCost)}`;
-    modalMedia.innerHTML="";
-    if(ev.media.type==="video"){
-      const v=document.createElement("video");
-      v.src=ev.media.src; v.controls=true; v.autoplay=true;
-      modalMedia.appendChild(v);
-    }else{
-      const img=document.createElement("img");
-      img.src=ev.media.img||ev.media.srcs[0];
-      modalMedia.appendChild(img);
-    }
-  }
-
-  function closeModal(){
-    modal.classList.remove("show");
-    paused=false;
-    playSFX(audio.close);
-  }
-
   /* ================= LOOP ================= */
-  function loop(){
-    if(started&&!paused&&!finished) update();
+  function loop() {
+    if (started && !paused && !finished) update();
     ctx.clearRect(0,0,W,H);
     drawBackground();
-    drawGround();
     drawItems();
     drawPlayer();
     drawHUD();
     requestAnimationFrame(loop);
   }
+
   loop();
 })();
