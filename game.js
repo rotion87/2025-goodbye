@@ -45,17 +45,13 @@
   const TOTAL_COINS = 524748;
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
+  constno-good to mention? keep.
+
   const W = canvas.width;
   const H = canvas.height;
 
   // 固定地板線
   const groundY = Math.floor(H * 0.78);
-
-  // 世界長度與終點線
-  const WORLD_LENGTH = 16000;
-  const finishLineX = WORLD_LENGTH - 900;
-  const FINAL_ZONE_START = Math.floor(WORLD_LENGTH * 0.90);
-  const FINAL_ZONE_END = finishLineX;
 
   /** =========================
    *  DOM overlays
@@ -107,7 +103,6 @@
 
   /** =========================
    *  Audio (BGM + SFX)
-   *  注意：瀏覽器需 user gesture 才能播放
    *  ========================= */
   const audio = {
     bgm: new Audio(PATHS.audio.bgm),
@@ -123,18 +118,6 @@
   audio.pickup.volume = 0.9;
   audio.end.volume = 0.9;
 
-  let audioUnlocked = false;
-  function unlockAudioOnce() {
-    if (audioUnlocked) return;
-    audioUnlocked = true;
-    // 嘗試播放/暫停一次以解鎖（部分瀏覽器需要）
-    audio.bgm.play().then(() => {
-      // 直接留著播 bgm
-    }).catch(() => {
-      // 如果失敗，下一次互動再試一次
-      audioUnlocked = false;
-    });
-  }
   function playSfx(aud) {
     try {
       aud.currentTime = 0;
@@ -142,19 +125,28 @@
     } catch {}
   }
 
+  // ✅ 遊戲一開始就嘗試播放 BGM（若被瀏覽器擋，自動在第一次按鍵補播）
+  let bgmPlaying = false;
+  function tryPlayBgm() {
+    if (bgmPlaying) return;
+    audio.bgm.play().then(() => {
+      bgmPlaying = true;
+    }).catch(() => {
+      // 被擋就先不管，等 user gesture 再試
+      bgmPlaying = false;
+    });
+  }
+  // 頁面載入就先嘗試一次
+  tryPlayBgm();
+
   /** =========================
    *  Events (A–N，已刪 K「爸爸離世」)
-   *  規則：
-   *  - 照片事件：3 張
-   *  - 影片事件（A、F）：1 影片 + 3 張
-   *  - ← → 瀏覽
-   *  - Enter 才能關閉
+   *  - 事件距離：更近（每個約 520px）
    *  ========================= */
   const events = [
     {
       id: "A", name: "蛇年賀卡", sprite: "snake", x: 1200,
-      coinCost: 18000,
-      caption: "蛇年賀卡",
+      coinCost: 18000, caption: "蛇年賀卡",
       mediaItems: [
         { type: "video", src: "media/events/A_video.mp4" },
         { type: "img", src: "media/events/A_1.jpg" },
@@ -163,9 +155,8 @@
       ]
     },
     {
-      id: "B", name: "你好礙眼・貼紙誕生", sprite: "eyes", x: 2100,
-      coinCost: 21000,
-      caption: "你好礙眼",
+      id: "B", name: "你好礙眼・貼紙誕生", sprite: "eyes", x: 1720,
+      coinCost: 21000, caption: "你好礙眼",
       mediaItems: [
         { type: "img", src: "media/events/B_1.jpg" },
         { type: "img", src: "media/events/B_2.jpg" },
@@ -173,9 +164,8 @@
       ]
     },
     {
-      id: "C", name: "生日快樂", sprite: "cake", x: 3000,
-      coinCost: 24000,
-      caption: "生日快樂",
+      id: "C", name: "生日快樂", sprite: "cake", x: 2240,
+      coinCost: 24000, caption: "生日快樂",
       mediaItems: [
         { type: "img", src: "media/events/C_1.jpg" },
         { type: "img", src: "media/events/C_2.jpg" },
@@ -183,9 +173,8 @@
       ]
     },
     {
-      id: "D", name: "空心磚小誌・開始發想", sprite: "hollow_brick", x: 4100,
-      coinCost: 43000,
-      caption: "空心磚小誌・開始發想",
+      id: "D", name: "空心磚小誌・開始發想", sprite: "hollow_brick", x: 2760,
+      coinCost: 43000, caption: "空心磚小誌・開始發想",
       mediaItems: [
         { type: "img", src: "media/events/D_1.jpg" },
         { type: "img", src: "media/events/D_2.jpg" },
@@ -193,9 +182,8 @@
       ]
     },
     {
-      id: "E", name: "參與新一代畢業展製作", sprite: "ball", x: 5200,
-      coinCost: 38000,
-      caption: "參與新一代畢業展製作",
+      id: "E", name: "參與新一代畢業展製作", sprite: "ball", x: 3280,
+      coinCost: 38000, caption: "參與新一代畢業展製作",
       mediaItems: [
         { type: "img", src: "media/events/E_1.jpg" },
         { type: "img", src: "media/events/E_2.jpg" },
@@ -203,9 +191,8 @@
       ]
     },
     {
-      id: "F", name: "新一代周邊影片拍攝", sprite: "logo", x: 6300,
-      coinCost: 28000,
-      caption: "新一代周邊影片拍攝",
+      id: "F", name: "新一代周邊影片拍攝", sprite: "logo", x: 3800,
+      coinCost: 28000, caption: "新一代周邊影片拍攝",
       mediaItems: [
         { type: "video", src: "media/events/F_video.mp4" },
         { type: "img", src: "media/events/F_1.jpg" },
@@ -214,9 +201,8 @@
       ]
     },
     {
-      id: "G", name: "九份旅遊", sprite: "cat", x: 7400,
-      coinCost: 26000,
-      caption: "九份旅遊",
+      id: "G", name: "九份旅遊", sprite: "cat", x: 4320,
+      coinCost: 26000, caption: "九份旅遊",
       mediaItems: [
         { type: "img", src: "media/events/G_1.jpg" },
         { type: "img", src: "media/events/G_2.jpg" },
@@ -224,9 +210,8 @@
       ]
     },
     {
-      id: "H", name: "軟啤酒絲巾・開始製作", sprite: "beer_can", x: 8500,
-      coinCost: 41000,
-      caption: "軟啤酒絲巾・開始製作",
+      id: "H", name: "軟啤酒絲巾・開始製作", sprite: "beer_can", x: 4840,
+      coinCost: 41000, caption: "軟啤酒絲巾・開始製作",
       mediaItems: [
         { type: "img", src: "media/events/H_1.jpg" },
         { type: "img", src: "media/events/H_2.jpg" },
@@ -234,9 +219,8 @@
       ]
     },
     {
-      id: "I", name: "去上書法課", sprite: "brush", x: 9600,
-      coinCost: 24000,
-      caption: "去上書法課",
+      id: "I", name: "去上書法課", sprite: "brush", x: 5360,
+      coinCost: 24000, caption: "去上書法課",
       mediaItems: [
         { type: "img", src: "media/events/I_1.jpg" },
         { type: "img", src: "media/events/I_2.jpg" },
@@ -244,9 +228,8 @@
       ]
     },
     {
-      id: "J", name: "手掌便利貼製作", sprite: "hand", x: 10750,
-      coinCost: 32000,
-      caption: "手掌便利貼製作",
+      id: "J", name: "手掌便利貼製作", sprite: "hand", x: 5880,
+      coinCost: 32000, caption: "手掌便利貼製作",
       mediaItems: [
         { type: "img", src: "media/events/J_1.jpg" },
         { type: "img", src: "media/events/J_2.jpg" },
@@ -254,9 +237,8 @@
       ]
     },
     {
-      id: "L", name: "去日本旅遊", sprite: "suitcase", x: 12050,
-      coinCost: 47000,
-      caption: "去日本旅遊",
+      id: "L", name: "去日本旅遊", sprite: "suitcase", x: 6400,
+      coinCost: 47000, caption: "去日本旅遊",
       mediaItems: [
         { type: "img", src: "media/events/L_1.jpg" },
         { type: "img", src: "media/events/L_2.jpg" },
@@ -264,9 +246,8 @@
       ]
     },
     {
-      id: "M", name: "去彰化設計展", sprite: "buddha", x: 13300,
-      coinCost: 25000,
-      caption: "去彰化設計展",
+      id: "M", name: "去彰化設計展", sprite: "buddha", x: 6920,
+      coinCost: 25000, caption: "去彰化設計展",
       mediaItems: [
         { type: "img", src: "media/events/M_1.jpg" },
         { type: "img", src: "media/events/M_2.jpg" },
@@ -274,9 +255,8 @@
       ]
     },
     {
-      id: "N", name: "燭籤・誕生", sprite: "question_candle", x: 14550,
-      coinCost: 40000,
-      caption: "燭籤・誕生",
+      id: "N", name: "燭籤・誕生", sprite: "question_candle", x: 7440,
+      coinCost: 40000, caption: "燭籤・誕生",
       mediaItems: [
         { type: "img", src: "media/events/N_1.jpg" },
         { type: "img", src: "media/events/N_2.jpg" },
@@ -284,9 +264,8 @@
       ]
     },
     {
-      id: "O", name: "草率季", sprite: "rat_ferret", x: 15450,
-      coinCost: 217748,
-      caption: "草率季",
+      id: "O", name: "草率季", sprite: "rat_ferret", x: 7960,
+      coinCost: 217748, caption: "草率季",
       mediaItems: [
         { type: "img", src: "media/events/O_1.jpg" },
         { type: "img", src: "media/events/O_2.jpg" },
@@ -295,24 +274,46 @@
     },
   ];
 
-  // coin sanity check
+  // coins check
   const sumCoins = events.reduce((a, e) => a + (e.coinCost || 0), 0);
   if (sumCoins !== TOTAL_COINS) {
     console.warn("Coin sum mismatch:", sumCoins, "!= TOTAL_COINS", TOTAL_COINS);
   }
 
   /** =========================
-   *  Player & world state
+   *  World length / finish line
+   *  ✅ 終點線在草率季之後
+   *  ========================= */
+  const lastEventX = events[events.length - 1].x; // O
+  const finishLineX = lastEventX + 520;           // 終點線在 O 後面
+  const WORLD_LENGTH = finishLineX + 1200;
+
+  // coins 平滑歸零區間（只在最後一小段做）
+  const FINAL_ZONE_START = finishLineX - 900;
+  const FINAL_ZONE_END = finishLineX;
+
+  /** =========================
+   *  Player state + jump physics
    *  ========================= */
   const player = {
     x: 180,
     y: groundY - 48,
     w: 32,
     h: 48,
-    speed: 3.2,
+    vx: 0,
+    vy: 0,
     facing: 1,
+    speed: 3.2,
+    onGround: true,
   };
 
+  // 跳躍手感（你可以再改）
+  const GRAVITY = 0.55;
+  const JUMP_VELOCITY = -10.5;
+
+  /** =========================
+   *  Global state
+   *  ========================= */
   let cameraX = 0;
   let started = false;
   let paused = false;
@@ -425,7 +426,6 @@
     showAchievements = true;
     ach.classList.add("show");
 
-    // 成就答案只用照片：你放檔案後這裡就會顯示
     ach1.src = PATHS.achievements.a1;
     ach2.src = PATHS.achievements.a2;
     ach3.src = PATHS.achievements.a3;
@@ -456,17 +456,17 @@
    *  Input
    *  ========================= */
   const keys = new Set();
+  let jumpPressed = false; // 防止按住一直跳
 
   window.addEventListener("keydown", (e) => {
     const k = e.key;
 
-    // prevent scroll
-    if (["ArrowLeft","ArrowRight","Enter"," ","Escape"].includes(k)) e.preventDefault();
+    if (["ArrowLeft","ArrowRight","ArrowUp","Enter"," "].includes(k)) e.preventDefault();
 
-    // unlock audio on first meaningful gesture
-    if (k === "Enter" || k === " ") unlockAudioOnce();
+    // ✅ 有任何鍵盤互動，就再嘗試一次 BGM（解決 autoplay 被擋）
+    tryPlayBgm();
 
-    // Start game
+    // Start game (Enter / Space)
     if (!started && (k === "Enter" || k === " ")) {
       started = true;
       title.classList.remove("show");
@@ -498,19 +498,29 @@
       return;
     }
 
+    // Jump (only once per press)
+    if (k === "ArrowUp") {
+      if (!jumpPressed && player.onGround && !paused) {
+        player.vy = JUMP_VELOCITY;
+        player.onGround = false;
+      }
+      jumpPressed = true;
+    }
+
     keys.add(k);
   }, { passive: false });
 
   window.addEventListener("keyup", (e) => {
     keys.delete(e.key);
+    if (e.key === "ArrowUp") jumpPressed = false;
   });
 
   // tap to continue on overlays
-  ach.addEventListener("click", () => { unlockAudioOnce(); advanceFromAchievements(); });
-  ending.addEventListener("click", () => { unlockAudioOnce(); if (endingPhase === 1) setEndingPhase(2); });
+  ach.addEventListener("click", () => { tryPlayBgm(); advanceFromAchievements(); });
+  ending.addEventListener("click", () => { tryPlayBgm(); if (endingPhase === 1) setEndingPhase(2); });
 
   /** =========================
-   *  Triggers
+   *  Collision helpers
    *  ========================= */
   function aabb(ax, ay, aw, ah, bx, by, bw, bh) {
     return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
@@ -520,7 +530,7 @@
     for (const ev of events) {
       if (triggered.has(ev.id)) continue;
 
-      // icon 48x48, placed with bottom on ground
+      // icon 48x48, bottom on ground
       const hit = aabb(
         player.x, player.y, player.w, player.h,
         ev.x - 24, groundY - 48, 48, 48
@@ -529,15 +539,13 @@
       if (hit) {
         triggered.add(ev.id);
 
-        // pickup sfx + open modal sfx
         playSfx(audio.pickup);
 
-        // LV rule: each event => +1 lv, xp +1
+        // each event => +1 lv
         lv += 1;
         xp += 1;
         spawnLevelUp();
 
-        // coins
         coins = Math.max(0, coins - (ev.coinCost || 0));
 
         openModal(ev);
@@ -548,10 +556,12 @@
 
   function checkFinishLine() {
     if (crossedFinish) return;
+
+    // ✅ 必須先觸發草率季 O 才能結束（確保終點線在 O 後仍保險）
+    if (!triggered.has("O")) return;
+
     if (player.x + player.w >= finishLineX) {
       crossedFinish = true;
-
-      // coins guarantee to 0 at finish line
       coins = 0;
 
       paused = true;
@@ -565,20 +575,37 @@
   }
 
   /** =========================
-   *  Update & Render
+   *  Camera / coordinate
    *  ========================= */
   function worldToScreenX(wx) { return Math.round(wx - cameraX); }
 
+  /** =========================
+   *  Update
+   *  ========================= */
   function update() {
-    // movement
+    // Horizontal move
     let vx = 0;
     if (keys.has("ArrowLeft")) { vx = -player.speed; player.facing = -1; }
     if (keys.has("ArrowRight")) { vx = +player.speed; player.facing = +1; }
 
     player.x = clamp(player.x + vx, 0, WORLD_LENGTH - 200);
 
-    // fixed ground line
-    player.y = groundY - player.h;
+    // Vertical physics (jump)
+    if (!player.onGround) {
+      player.vy += GRAVITY;
+      player.y += player.vy;
+
+      // Land on ground
+      const groundTop = groundY - player.h;
+      if (player.y >= groundTop) {
+        player.y = groundTop;
+        player.vy = 0;
+        player.onGround = true;
+      }
+    } else {
+      // keep grounded
+      player.y = groundY - player.h;
+    }
 
     // camera follow
     cameraX = clamp(player.x - W * 0.35, 0, WORLD_LENGTH - W);
@@ -591,26 +618,41 @@
     checkFinishLine();
   }
 
+  /** =========================
+   *  Render
+   *  ========================= */
   function drawBackground() {
-    if (bgReady) {
-      // fit bg height to canvas (no tiling needed)
-      ctx.drawImage(bgImg, 0, 0, W, H);
-    } else {
-      // fallback
+    if (!bgReady) {
       const g = ctx.createLinearGradient(0, 0, 0, H);
       g.addColorStop(0, "#0a1030");
       g.addColorStop(1, "#05060a");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
+      return;
+    }
+
+    // ✅ 背景跟著移動（視差循環）
+    const PARALLAX = 0.55;
+
+    const bw = bgImg.width;
+    const bh = bgImg.height;
+
+    const scale = H / bh;
+    const drawW = bw * scale;
+    const drawH = H;
+
+    let offsetX = -((cameraX * PARALLAX) % drawW);
+    if (offsetX > 0) offsetX -= drawW;
+
+    for (let x = offsetX; x < W; x += drawW) {
+      ctx.drawImage(bgImg, x, 0, drawW, drawH);
     }
   }
 
   function drawGroundLine() {
-    // ground fill
     ctx.fillStyle = "rgba(0,0,0,.22)";
     ctx.fillRect(0, groundY, W, H - groundY);
 
-    // fixed ground line
     ctx.fillStyle = "rgba(255,255,255,.18)";
     ctx.fillRect(0, groundY, W, 2);
   }
@@ -619,12 +661,10 @@
     const sx = worldToScreenX(finishLineX);
     if (sx < -120 || sx > W + 120) return;
 
-    // pole
     const top = groundY - 120;
     ctx.fillStyle = "rgba(255,255,255,.20)";
     ctx.fillRect(sx - 2, top, 4, 120);
 
-    // checkered flag
     const fw = 56, fh = 28;
     const fx = sx + 6, fy = top + 10;
     for (let y = 0; y < fh; y += 7) {
@@ -635,7 +675,6 @@
       }
     }
 
-    // ground stripe
     ctx.fillStyle = "rgba(233,236,241,.78)";
     ctx.fillRect(sx - 30, groundY - 6, 60, 6);
     ctx.fillStyle = "rgba(0,0,0,.35)";
@@ -645,15 +684,12 @@
   function drawIcon(ev) {
     if (triggered.has(ev.id)) return;
     const sx = worldToScreenX(ev.x);
-
     if (sx < -80 || sx > W + 80) return;
 
     const img = iconImgs[ev.sprite];
     if (iconReady[ev.sprite] && img) {
-      // 48x48 bottom on ground
       ctx.drawImage(img, sx - 24, groundY - 48, 48, 48);
     } else {
-      // fallback
       ctx.fillStyle = "rgba(142,240,201,.55)";
       ctx.fillRect(sx - 24, groundY - 48, 48, 48);
     }
@@ -662,11 +698,11 @@
   function drawPlayer() {
     const sx = worldToScreenX(player.x);
 
-    // 你的 player_main.png 底下約有 2px 透明 → 需要校正貼地
+    // 你的 player_main.png 底下約 2px 透明 → 貼地校正
     const FOOT_OFFSET = 2;
 
     const px = Math.round(sx);
-    const py = Math.round(groundY - 48 + FOOT_OFFSET);
+    const py = Math.round(player.y + FOOT_OFFSET);
 
     if (!playerReady) {
       ctx.fillStyle = "rgba(142,240,201,.85)";
@@ -707,7 +743,6 @@
     ctx.fillStyle = "rgba(142,240,201,.95)";
     ctx.fillText(`Coins: ${fmt(coins)}`, 140, 40);
 
-    // progress
     const prog = clamp(player.x / finishLineX, 0, 1);
     ctx.fillStyle = "rgba(255,255,255,.10)";
     ctx.fillRect(140, 52, 220, 8);
@@ -717,7 +752,6 @@
     ctx.restore();
   }
 
-  // LEVEL UP! pixel outlined text (Canvas)
   function drawLevelUpTexts() {
     const t = now();
     for (let i = floatTexts.length - 1; i >= 0; i--) {
@@ -741,13 +775,11 @@
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
 
-    // hard outline (pixel-ish)
     ctx.fillStyle = "rgba(0,0,0,.85)";
     const o = 2;
     const offsets = [[-o,0],[o,0],[0,-o],[0,o],[-o,-o],[o,-o],[-o,o],[o,o]];
     for (const [dx, dy] of offsets) ctx.fillText(text, x + dx, y + dy);
 
-    // fill
     ctx.fillStyle = "rgba(142,240,201,.95)";
     ctx.fillText(text, x, y);
 
@@ -767,26 +799,22 @@
   /** =========================
    *  Main loop
    *  ========================= */
-  let lastT = now();
   function loop() {
-    const t = now();
-    lastT = t;
-
     if (started && !paused && endingPhase === 0 && !showAchievements && !isModalOpen()) {
       update();
     }
 
-    // render world
     ctx.clearRect(0, 0, W, H);
     drawBackground();
     drawFinalTone();
     drawGroundLine();
 
-    // finish line & icons
-    drawFinishLine();
+    // icons
     for (const ev of events) drawIcon(ev);
 
-    // player & hud & floating texts
+    // finish line always drawn (will appear after O due to its position)
+    drawFinishLine();
+
     drawPlayer();
     drawLevelUpTexts();
     drawHUD();
