@@ -141,14 +141,13 @@
       id: "A", name: "蛇年賀卡", sprite: "snake", x: 1200,
       coinCost: 18000, caption: "蛇年賀卡",
       mediaItems: [
-        { type: "video", src: "media/events/A_video.mp4" },
         { type: "img", src: "media/events/A_1.jpg" },
         { type: "img", src: "media/events/A_2.jpg" },
         { type: "img", src: "media/events/A_3.jpg" },
       ]
     },
     {
-      id: "B", name: "你好礙眼・貼紙誕生", sprite: "eyes", x: 1720,
+      id: "B", name: "你好礙眼", sprite: "eyes", x: 1720,
       coinCost: 21000, caption: "你好礙眼",
       mediaItems: [
         { type: "img", src: "media/events/B_1.jpg" },
@@ -166,8 +165,8 @@
       ]
     },
     {
-      id: "D", name: "空心磚小誌・開始發想", sprite: "hollow_brick", x: 2760,
-      coinCost: 43000, caption: "空心磚小誌・開始發想",
+      id: "D", name: "空心磚小誌", sprite: "hollow_brick", x: 2760,
+      coinCost: 43000, caption: "空心磚小誌",
       mediaItems: [
         { type: "img", src: "media/events/D_1.jpg" },
         { type: "img", src: "media/events/D_2.jpg" },
@@ -187,7 +186,6 @@
       id: "F", name: "新一代周邊影片拍攝", sprite: "logo", x: 3800,
       coinCost: 28000, caption: "新一代周邊影片拍攝",
       mediaItems: [
-        { type: "video", src: "media/events/F_video.mp4" },
         { type: "img", src: "media/events/F_1.jpg" },
         { type: "img", src: "media/events/F_2.jpg" },
         { type: "img", src: "media/events/F_3.jpg" },
@@ -203,8 +201,8 @@
       ]
     },
     {
-      id: "H", name: "軟啤酒絲巾・開始製作", sprite: "beer_can", x: 4840,
-      coinCost: 41000, caption: "軟啤酒絲巾・開始製作",
+      id: "H", name: "軟啤酒絲巾", sprite: "beer_can", x: 4840,
+      coinCost: 41000, caption: "",
       mediaItems: [
         { type: "img", src: "media/events/H_1.jpg" },
         { type: "img", src: "media/events/H_2.jpg" },
@@ -230,8 +228,8 @@
       ]
     },
     {
-      id: "L", name: "去日本旅遊", sprite: "suitcase", x: 6400,
-      coinCost: 47000, caption: "去日本旅遊",
+      id: "L", name: "日本旅遊", sprite: "suitcase", x: 6400,
+      coinCost: 47000, caption: "日本旅遊",
       mediaItems: [
         { type: "img", src: "media/events/L_1.jpg" },
         { type: "img", src: "media/events/L_2.jpg" },
@@ -239,8 +237,8 @@
       ]
     },
     {
-      id: "M", name: "去彰化設計展", sprite: "buddha", x: 6920,
-      coinCost: 25000, caption: "去彰化設計展",
+      id: "M", name: "彰化設計展", sprite: "buddha", x: 6920,
+      coinCost: 25000, caption: "彰化設計展",
       mediaItems: [
         { type: "img", src: "media/events/M_1.jpg" },
         { type: "img", src: "media/events/M_2.jpg" },
@@ -248,8 +246,8 @@
       ]
     },
     {
-      id: "N", name: "燭籤・誕生", sprite: "question_candle", x: 7440,
-      coinCost: 40000, caption: "燭籤・誕生",
+      id: "N", name: "燭籤", sprite: "question_candle", x: 7440,
+      coinCost: 40000, caption: "燭籤",
       mediaItems: [
         { type: "img", src: "media/events/N_1.jpg" },
         { type: "img", src: "media/events/N_2.jpg" },
