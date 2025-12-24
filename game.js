@@ -30,7 +30,6 @@
       pickup: "media/audio/fx_pickup.wav",
       end: "media/audio/sfx_end.wav",
     },
-    // 成就頁照片：你之後放檔案後改這裡就好
     achievements: {
       a1: "media/achievements/ach_1.jpg",
       a2: "media/achievements/ach_2.jpg",
@@ -77,19 +76,16 @@
   /** =========================
    *  Assets
    *  ========================= */
-  // Background
   const bgImg = new Image();
   bgImg.src = PATHS.bg;
   let bgReady = false;
   bgImg.onload = () => (bgReady = true);
 
-  // Player (32x48)
   const playerImg = new Image();
   playerImg.src = PATHS.player;
   let playerReady = false;
   playerImg.onload = () => (playerReady = true);
 
-  // Sprites (48x48)
   const iconImgs = {};
   const iconReady = {};
   for (const [k, src] of Object.entries(PATHS.sprites)) {
@@ -124,23 +120,21 @@
     } catch {}
   }
 
-  // ✅ 遊戲一開始就嘗試播放 BGM（若被瀏覽器擋，自動在第一次按鍵補播）
+  // 遊戲一開始就嘗試播放 BGM（若被瀏覽器擋，自動在第一次按鍵補播）
   let bgmPlaying = false;
   function tryPlayBgm() {
     if (bgmPlaying) return;
     audio.bgm.play().then(() => {
       bgmPlaying = true;
     }).catch(() => {
-      // 被擋就先不管，等 user gesture 再試
       bgmPlaying = false;
     });
   }
-  // 頁面載入就先嘗試一次
   tryPlayBgm();
 
   /** =========================
-   *  Events (A–N，已刪 K「爸爸離世」)
-   *  - 事件距離：更近（每個約 520px）
+   *  Events (A–N，已刪 K)
+   *  - 事件距離：更近
    *  ========================= */
   const events = [
     {
@@ -273,7 +267,6 @@
     },
   ];
 
-  // coins check
   const sumCoins = events.reduce((a, e) => a + (e.coinCost || 0), 0);
   if (sumCoins !== TOTAL_COINS) {
     console.warn("Coin sum mismatch:", sumCoins, "!= TOTAL_COINS", TOTAL_COINS);
@@ -281,13 +274,11 @@
 
   /** =========================
    *  World length / finish line
-   *  ✅ 終點線在草率季之後
    *  ========================= */
   const lastEventX = events[events.length - 1].x; // O
   const finishLineX = lastEventX + 520;           // 終點線在 O 後面
   const WORLD_LENGTH = finishLineX + 1200;
 
-  // coins 平滑歸零區間（只在最後一小段做）
   const FINAL_ZONE_START = finishLineX - 900;
   const FINAL_ZONE_END = finishLineX;
 
@@ -306,7 +297,6 @@
     onGround: true,
   };
 
-  // 跳躍手感（你可以再改）
   const GRAVITY = 0.55;
   const JUMP_VELOCITY = -10.5;
 
@@ -323,8 +313,7 @@
 
   const triggered = new Set();
 
-  // Level up floating texts
-  const floatTexts = []; // {text,x,y,t0,dur}
+  const floatTexts = [];
   const now = () => performance.now();
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const fmt = (n) => n.toLocaleString("en-US");
@@ -339,13 +328,11 @@
     });
   }
 
-  // Finish / overlays flow
   let crossedFinish = false;
   let showAchievements = false;
-  let endingPhase = 0; // 0 none, 1 phase1, 2 phase2
+  let endingPhase = 0;
   let endSfxPlayed = false;
 
-  // Final zone coin smoothing
   let inFinalZone = false;
   let finalZoneEnterCoins = null;
   function updateFinalZoneCoins() {
@@ -414,7 +401,6 @@
     paused = false;
     modalEvent = null;
     modalIdx = 0;
-
     playSfx(audio.close);
   }
 
@@ -455,24 +441,24 @@
    *  Input
    *  ========================= */
   const keys = new Set();
-  let jumpPressed = false; // 防止按住一直跳
+  let jumpPressed = false;
 
   window.addEventListener("keydown", (e) => {
     const k = e.key;
 
-    if (["ArrowLeft","ArrowRight","ArrowUp","Enter"," "].includes(k)) e.preventDefault();
+    if (["ArrowLeft","ArrowRight","ArrowUp","Enter"," "].includes(k)) {
+      e.preventDefault();
+      if (k === "Enter" && e.repeat) return;
+    }
 
-    // ✅ 有任何鍵盤互動，就再嘗試一次 BGM（解決 autoplay 被擋）
     tryPlayBgm();
 
-    // Start game (Enter / Space)
     if (!started && (k === "Enter" || k === " ")) {
       started = true;
       title.classList.remove("show");
       return;
     }
 
-    // Achievements / Ending interactions
     if (showAchievements) {
       if (k === "Enter" || k === " ") advanceFromAchievements();
       return;
@@ -483,7 +469,6 @@
     }
     if (endingPhase === 2) return;
 
-    // Modal interactions (← → browse, Enter close only)
     if (isModalOpen()) {
       if (k === "ArrowLeft") {
         modalIdx = (modalIdx - 1 + modalEvent.mediaItems.length) % modalEvent.mediaItems.length;
@@ -497,7 +482,6 @@
       return;
     }
 
-    // Jump (only once per press)
     if (k === "ArrowUp") {
       if (!jumpPressed && player.onGround && !paused) {
         player.vy = JUMP_VELOCITY;
@@ -514,7 +498,6 @@
     if (e.key === "ArrowUp") jumpPressed = false;
   });
 
-  // tap to continue on overlays
   ach.addEventListener("click", () => { tryPlayBgm(); advanceFromAchievements(); });
   ending.addEventListener("click", () => { tryPlayBgm(); if (endingPhase === 1) setEndingPhase(2); });
 
@@ -529,7 +512,6 @@
     for (const ev of events) {
       if (triggered.has(ev.id)) continue;
 
-      // icon 48x48, bottom on ground
       const hit = aabb(
         player.x, player.y, player.w, player.h,
         ev.x - 24, groundY - 48, 48, 48
@@ -540,13 +522,11 @@
 
         playSfx(audio.pickup);
 
-        // each event => +1 lv
         lv += 1;
         xp += 1;
         spawnLevelUp();
 
         coins = Math.max(0, coins - (ev.coinCost || 0));
-
         openModal(ev);
         break;
       }
@@ -555,8 +535,6 @@
 
   function checkFinishLine() {
     if (crossedFinish) return;
-
-    // ✅ 必須先觸發草率季 O 才能結束（確保終點線在 O 後仍保險）
     if (!triggered.has("O")) return;
 
     if (player.x + player.w >= finishLineX) {
@@ -573,28 +551,22 @@
     }
   }
 
-  /** =========================
-   *  Camera / coordinate
-   *  ========================= */
   function worldToScreenX(wx) { return Math.round(wx - cameraX); }
 
   /** =========================
    *  Update
    *  ========================= */
   function update() {
-    // Horizontal move
     let vx = 0;
     if (keys.has("ArrowLeft")) { vx = -player.speed; player.facing = -1; }
     if (keys.has("ArrowRight")) { vx = +player.speed; player.facing = +1; }
 
     player.x = clamp(player.x + vx, 0, WORLD_LENGTH - 200);
 
-    // Vertical physics (jump)
     if (!player.onGround) {
       player.vy += GRAVITY;
       player.y += player.vy;
 
-      // Land on ground
       const groundTop = groundY - player.h;
       if (player.y >= groundTop) {
         player.y = groundTop;
@@ -602,17 +574,13 @@
         player.onGround = true;
       }
     } else {
-      // keep grounded
       player.y = groundY - player.h;
     }
 
-    // camera follow
     cameraX = clamp(player.x - W * 0.35, 0, WORLD_LENGTH - W);
 
-    // coins smoothing near end
     updateFinalZoneCoins();
 
-    // triggers
     checkEventTriggers();
     checkFinishLine();
   }
@@ -630,7 +598,6 @@
       return;
     }
 
-    // ✅ 背景跟著移動（視差循環）
     const PARALLAX = 0.55;
 
     const bw = bgImg.width;
@@ -651,7 +618,6 @@
   function drawGroundLine() {
     ctx.fillStyle = "rgba(0,0,0,.22)";
     ctx.fillRect(0, groundY, W, H - groundY);
-
     ctx.fillStyle = "rgba(255,255,255,.18)";
     ctx.fillRect(0, groundY, W, 2);
   }
@@ -696,8 +662,6 @@
 
   function drawPlayer() {
     const sx = worldToScreenX(player.x);
-
-    // 你的 player_main.png 底下約 2px 透明 → 貼地校正
     const FOOT_OFFSET = 2;
 
     const px = Math.round(sx);
@@ -781,7 +745,6 @@
 
     ctx.fillStyle = "rgba(142,240,201,.95)";
     ctx.fillText(text, x, y);
-
     ctx.restore();
   }
 
@@ -808,10 +771,8 @@
     drawFinalTone();
     drawGroundLine();
 
-    // icons
     for (const ev of events) drawIcon(ev);
 
-    // finish line always drawn (will appear after O due to its position)
     drawFinishLine();
 
     drawPlayer();
