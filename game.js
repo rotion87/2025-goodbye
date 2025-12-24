@@ -45,7 +45,6 @@
   const TOTAL_COINS = 524748;
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
-  constno-good to mention? keep.
 
   const W = canvas.width;
   const H = canvas.height;
