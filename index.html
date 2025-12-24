@@ -3,53 +3,90 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>2025 回顧｜橫向卷軸冒險</title>
+  <title>2025 年度回顧冒險</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="wrap">
-    <canvas id="game" width="960" height="540" aria-label="game canvas"></canvas>
+    <canvas id="game" width="960" height="540"></canvas>
 
-    <!-- Title Screen -->
-    <div id="titleScreen" class="overlay show" role="dialog" aria-modal="true">
+    <!-- Title -->
+    <div id="title" class="overlay show">
       <div class="panel">
-        <div class="logo">PRESS START</div>
-        <div class="sub">2025 年度回顧・橫向卷軸冒險</div>
-        <div class="hint">Press <b>Enter</b> / <b>Space</b> to Start</div>
-        <div class="tiny">← → 移動　↑ 跳躍　Enter/Space 關閉視窗　ESC 關閉視窗　M 靜音</div>
+        <div class="titleBig">LET’S PLAY</div>
+        <div class="titleSub">2025 Recap Side-Scroll</div>
+
+        <div class="row">
+          <div class="chip">← → 移動</div>
+          <div class="chip">事件內：← → 瀏覽</div>
+          <div class="chip"><b>Enter</b> 關閉事件</div>
+        </div>
+
+        <div class="startHint breathing">Press Enter to Start</div>
+        <div class="tiny">（為了播放 BGM，第一次開始需要一次鍵盤互動）</div>
       </div>
     </div>
 
-    <!-- Modal -->
-    <div id="modal" class="overlay" role="dialog" aria-modal="true">
+    <!-- Event Modal -->
+    <div id="modal" class="overlay">
       <div class="panel modal">
         <div class="modalHeader">
           <div>
             <div id="modalTitle" class="modalTitle">事件</div>
-            <div id="modalSubtitle" class="modalSubtitle">—</div>
+            <div id="modalMeta" class="modalMeta">—</div>
           </div>
-          <button id="closeBtn" class="closeBtn" aria-label="close">ESC</button>
+          <div class="modalRightHint">← → Browse　<b>Enter</b> Close</div>
         </div>
 
-        <div id="modalMedia" class="modalMedia"></div>
-        <div class="modalFooter">
-          <span>Enter / ESC 關閉</span>
+        <div class="mediaBox">
+          <div id="mediaStage" class="mediaStage"></div>
+          <div class="mediaBar">
+            <div class="mediaHint">← →</div>
+            <div id="mediaIndex" class="mediaIndex">1 / 3</div>
+            <div class="mediaHint"><b>Enter</b></div>
+          </div>
         </div>
+
+        <pre id="modalCaption" class="caption"></pre>
+        <div class="footnote">※ ESC / 點擊不會關閉（只認 Enter）</div>
+      </div>
+    </div>
+
+    <!-- Achievements -->
+    <div id="ach" class="overlay">
+      <div class="panel ach">
+        <div class="achHeader">
+          <div class="achTitle">ACHIEVEMENTS 2025</div>
+        </div>
+
+        <div class="grid2x2">
+          <div class="card">
+            <div class="cardTitle">2025年最喜歡的一場表演</div>
+            <div class="imgWrap"><img id="ach1" alt=""></div>
+          </div>
+          <div class="card">
+            <div class="cardTitle">2025年最喜歡的一個玩具</div>
+            <div class="imgWrap"><img id="ach2" alt=""></div>
+          </div>
+          <div class="card">
+            <div class="cardTitle">2025年最喜歡的創作</div>
+            <div class="imgWrap"><img id="ach3" alt=""></div>
+          </div>
+          <div class="card">
+            <div class="cardTitle">2025年最愛的一餐</div>
+            <div class="imgWrap"><img id="ach4" alt=""></div>
+          </div>
+        </div>
+
+        <div class="tap breathing">Tap to continue</div>
       </div>
     </div>
 
     <!-- Ending -->
-    <div id="ending" class="overlay" role="dialog" aria-modal="true">
-      <div class="panel">
-        <div class="endText">
-所有夢想都有終點
-
-但不是結束
-
-是我終於知道
-自己走到哪裡了
-        </div>
-        <div class="hint">（按 F5 重新開始）</div>
+    <div id="ending" class="overlay">
+      <div class="panel end">
+        <div id="endText" class="endText"></div>
+        <div id="endTap" class="tap breathing">Tap to continue</div>
       </div>
     </div>
   </div>
