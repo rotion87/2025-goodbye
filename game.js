@@ -33,7 +33,7 @@
     achievements: {
       a1: "media/achievements/ach_1.jpg",
       a2: "media/achievements/ach_2.jpg",
-      a3: "media/achievements/ach_3.jpg",
+      a3: { type: "video", src: "media/achievements/ach_3.mp4" },
       a4: "media/achievements/ach_4.jpg",
     }
   };
