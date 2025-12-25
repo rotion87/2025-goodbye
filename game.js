@@ -165,8 +165,8 @@
       ]
     },
     {
-      id: "D", name: "空心磚小誌", sprite: "hollow_brick", x: 2760,
-      coinCost: 43000, caption: "空心磚小誌",
+      id: "D", name: "空心IN PLACE", sprite: "hollow_brick", x: 2760,
+      coinCost: 43000, caption: "空心IN PLACE",
       mediaItems: [
         { type: "img", src: "media/events/D_1.jpg" },
         { type: "img", src: "media/events/D_2.jpg" },
@@ -174,8 +174,8 @@
       ]
     },
     {
-      id: "E", name: "參與新一代畢業展製作", sprite: "ball", x: 3280,
-      coinCost: 38000, caption: "參與新一代畢業展製作",
+      id: "E", name: "校內展獎盃製作", sprite: "ball", x: 3280,
+      coinCost: 38000, caption: "校內展獎盃製作",
       mediaItems: [
         { type: "img", src: "media/events/E_1.jpg" },
         { type: "img", src: "media/events/E_2.jpg" },
@@ -183,8 +183,8 @@
       ]
     },
     {
-      id: "F", name: "新一代周邊影片拍攝", sprite: "logo", x: 3800,
-      coinCost: 28000, caption: "新一代周邊影片拍攝",
+      id: "F", name: "偷偷參加新一代", sprite: "logo", x: 3800,
+      coinCost: 28000, caption: "偷偷參加新一代",
       mediaItems: [
         { type: "img", src: "media/events/F_1.jpg" },
         { type: "img", src: "media/events/F_2.jpg" },
@@ -201,17 +201,22 @@
       ]
     },
     {
-      id: "H", name: "軟啤酒絲巾", sprite: "beer_can", x: 4840,
-      coinCost: 41000, caption: "",
+      id: "H", name: "軟", sprite: "beer_can", x: 4840,
+      coinCost: 41000, caption: "軟",
       mediaItems: [
         { type: "img", src: "media/events/H_1.jpg" },
         { type: "img", src: "media/events/H_2.jpg" },
         { type: "img", src: "media/events/H_3.jpg" },
+        { type: "img", src: "media/events/H_4.jpg" },
+        { type: "img", src: "media/events/H_5.jpg" },
+        { type: "img", src: "media/events/H_6.jpg" },
+        { type: "img", src: "media/events/H_7.jpg" },
+        { type: "img", src: "media/events/H_8.jpg" },
       ]
     },
     {
-      id: "I", name: "去上書法課", sprite: "brush", x: 5360,
-      coinCost: 24000, caption: "去上書法課",
+      id: "I", name: "書法課", sprite: "brush", x: 5360,
+      coinCost: 24000, caption: "書法課",
       mediaItems: [
         { type: "img", src: "media/events/I_1.jpg" },
         { type: "img", src: "media/events/I_2.jpg" },
@@ -219,8 +224,8 @@
       ]
     },
     {
-      id: "J", name: "手掌便利貼製作", sprite: "hand", x: 5880,
-      coinCost: 32000, caption: "手掌便利貼製作",
+      id: "J", name: "手心貼手心", sprite: "hand", x: 5880,
+      coinCost: 32000, caption: "手心貼手心",
       mediaItems: [
         { type: "img", src: "media/events/J_1.jpg" },
         { type: "img", src: "media/events/J_2.jpg" },
@@ -228,8 +233,8 @@
       ]
     },
     {
-      id: "L", name: "日本旅遊", sprite: "suitcase", x: 6400,
-      coinCost: 47000, caption: "日本旅遊",
+      id: "L", name: "日本東京行", sprite: "suitcase", x: 6400,
+      coinCost: 47000, caption: "日本東京行",
       mediaItems: [
         { type: "img", src: "media/events/L_1.jpg" },
         { type: "img", src: "media/events/L_2.jpg" },
